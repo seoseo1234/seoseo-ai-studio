@@ -1,0 +1,110 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Black alpha ladder */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 2.4rem;
+}
+
+.modalContent {
+  background-color: var(--color-canvas-card);
+  border-radius: var(--radius-card);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.modalHeader {
+  padding: 2.4rem 2.4rem 0;
+}
+
+.modalHeader h2 {
+  font-size: 2.4rem;
+  color: var(--color-brand-starbucks);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.form {
+  padding: 2.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+
+/* Floating Label Input styling */
+.inputGroup {
+  position: relative;
+  background-color: var(--color-canvas-primary);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.inputGroup:focus-within {
+  border-color: var(--color-brand-accent);
+}
+
+.inputGroup.hasError {
+  border-color: var(--color-error);
+  background-color: hsla(4, 82%, 43%, 0.05); /* Red Tint */
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.6rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transition: 0.3s cubic-bezier(0.32, 2.32, 0.61, 0.27) all;
+}
+
+.input {
+  width: 100%;
+  padding: 24px 12px 8px;
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+/* Active floating label state */
+.input:focus ~ .floatingLabel,
+.input:not(:placeholder-shown) ~ .floatingLabel,
+.inputGroup.hasValue .floatingLabel {
+  top: 12px;
+  font-size: 1.2rem;
+  color: var(--color-brand-accent);
+}
+
+.inputGroup.hasError .floatingLabel {
+  color: var(--color-error);
+}
+
+.errorMessage {
+  color: var(--color-error);
+  font-size: 1.4rem;
+  margin-top: -1.6rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.6rem;
+  margin-top: 0.8rem;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .modalOverlay {
+  background-color: rgba(255, 255, 255, 0.1);
+}

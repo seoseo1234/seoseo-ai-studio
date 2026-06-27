@@ -1,0 +1,38 @@
+.largeModal {
+  max-width: 500px;
+}
+
+.thumbnailSection {
+  margin-top: 0.8rem;
+}
+
+.sectionLabel {
+  font-size: 1.4rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+}
+
+.uploadControls {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+}
+
+.or {
+  color: var(--color-text-secondary);
+  font-size: 1.4rem;
+}
+
+.fileInput {
+  font-size: 1.4rem;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 480px) {
+  .uploadControls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+}
