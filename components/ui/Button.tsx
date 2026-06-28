@@ -4,7 +4,7 @@ import styles from './Button.module.css';
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'outlined' | 'black' | 'dark-outlined' | 'green-inverted' | 'outlined-on-dark' | 'frap';
   size?: 'default' | 'large' | 'frap-mini';
-  children: React.ReactNode;
+  children?: React.ReactNode;
   icon?: React.ReactNode;
 }
 

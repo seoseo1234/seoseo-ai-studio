@@ -139,20 +139,7 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
             />
           </div>
 
-          {/* Thumbnail */}
-          <div className={formStyles.thumbnailSection}>
-            <div className={`${styles.inputGroup} ${thumbnailUrl ? styles.hasValue : ''}`}>
-              <label className={styles.floatingLabel}>썸네일 이미지 URL (선택)</label>
-              <input
-                type="url"
-                className={styles.input}
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder=" "
-                disabled={isUploading}
-              />
-            </div>
-          </div>
+          {/* 썸네일은 이제 자동 생성되므로 UI 제거 */}
           
           {error && <div className={styles.errorMessage}>{error}</div>}
 
