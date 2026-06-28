@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { Button } from '../ui/Button';
 import styles from './AdminLoginModal.module.css'; // Reusing modal styles
 import formStyles from './AppFormModal.module.css';
@@ -18,20 +17,11 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
   const [newCategory, setNewCategory] = useState('');
   const [url, setUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-      setThumbnailUrl(''); // Clear URL if file is selected
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,13 +34,9 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
         throw new Error('필수 항목을 모두 입력해주세요.');
       }
 
-      let finalThumbnailUrl = thumbnailUrl;
-
-      // Upload image if file is selected
-      if (imageFile) {
-        const fileRef = ref(storage, `thumbnails/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(fileRef, imageFile);
-        finalThumbnailUrl = await getDownloadURL(snapshot.ref);
+      // Firebase Auth 상태 확인
+      if (!auth.currentUser) {
+        throw new Error('로그인 세션이 만료되었습니다. 다시 로그인 해주세요.');
       }
 
       // Save to Firestore
@@ -58,7 +44,7 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
         title,
         category: finalCategory,
         url,
-        thumbnailUrl: finalThumbnailUrl,
+        thumbnailUrl: thumbnailUrl,
         createdAt: new Date()
       });
 
@@ -68,7 +54,6 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
       setNewCategory('');
       setUrl('');
       setThumbnailUrl('');
-      setImageFile(null);
       onClose();
       
       // Optionally trigger a re-fetch in the parent component, 
@@ -149,30 +134,14 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
 
           {/* Thumbnail */}
           <div className={formStyles.thumbnailSection}>
-            <p className={formStyles.sectionLabel}>썸네일 사진</p>
-            <div className={formStyles.uploadControls}>
-              <div className={`${styles.inputGroup} ${thumbnailUrl ? styles.hasValue : ''}`} style={{ flex: 1 }}>
-                <label className={styles.floatingLabel}>이미지 URL 입력</label>
-                <input
-                  type="url"
-                  className={styles.input}
-                  value={thumbnailUrl}
-                  onChange={(e) => {
-                    setThumbnailUrl(e.target.value);
-                    setImageFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                  placeholder=" "
-                  disabled={isUploading}
-                />
-              </div>
-              <span className={formStyles.or}>또는</span>
+            <div className={`${styles.inputGroup} ${thumbnailUrl ? styles.hasValue : ''}`}>
+              <label className={styles.floatingLabel}>썸네일 이미지 URL (선택)</label>
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-                className={formStyles.fileInput}
+                type="url"
+                className={styles.input}
+                value={thumbnailUrl}
+                onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder=" "
                 disabled={isUploading}
               />
             </div>
