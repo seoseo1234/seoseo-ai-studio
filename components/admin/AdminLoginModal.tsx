@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { usePortalStore } from '../../store/usePortalStore';
 import styles from './AdminLoginModal.module.css';
@@ -24,15 +23,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
     setError('');
 
     try {
-      // Use the hardcoded admin email and the user's code as password
-      await signInWithEmailAndPassword(auth, 'admin@portal.com', code);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'admin@portal.com',
+        password: code,
+      });
+
+      if (error) throw error;
+
       setIsAdmin(true);
       setCode('');
       onClose();
     } catch (err: any) {
       console.error('Login error:', err);
-      // Firebase throws 'auth/wrong-password' or 'auth/user-not-found'
-      setError('관리자 코드가 일치하지 않거나, Firebase 설정이 완료되지 않았습니다.');
+      setError('관리자 코드가 일치하지 않거나, 설정이 완료되지 않았습니다.');
     } finally {
       setIsLoading(false);
     }

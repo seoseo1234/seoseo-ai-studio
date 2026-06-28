@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db, auth } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import styles from './AdminLoginModal.module.css'; // Reusing modal styles
 import formStyles from './AppFormModal.module.css';
@@ -16,6 +15,7 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
   const [category, setCategory] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [url, setUrl] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
@@ -33,39 +33,64 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
         throw new Error('필수 항목을 모두 입력해주세요.');
       }
 
-      // Firebase Auth 상태 확인
-      if (!auth.currentUser) {
+      // Check session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         throw new Error('로그인 세션이 만료되었습니다. 다시 로그인 해주세요.');
       }
 
-      // Generate Favicon URL automatically
       let finalThumbnailUrl = '';
-      try {
-        const domain = new URL(url).hostname;
-        finalThumbnailUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-      } catch (e) {
-        // URL 파싱 에러 방지 (기본 썸네일 처리용)
+
+      if (thumbnailFile) {
+        // Upload to Supabase Storage
+        const fileExt = thumbnailFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('thumbnails')
+          .upload(filePath, thumbnailFile);
+
+        if (uploadError) {
+          throw new Error('썸네일 업로드에 실패했습니다: ' + uploadError.message);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('thumbnails')
+          .getPublicUrl(filePath);
+          
+        finalThumbnailUrl = publicUrl;
+      } else {
+        // Generate Favicon URL automatically if no file provided
+        try {
+          const domain = new URL(url).hostname;
+          finalThumbnailUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        } catch (err) {
+          // Fallback
+        }
       }
 
-      // Save to Firestore
-      await addDoc(collection(db, 'apps'), {
-        title,
-        category: finalCategory,
-        url,
-        thumbnailUrl: finalThumbnailUrl,
-        createdAt: new Date()
-      });
+      // Save to Supabase
+      const { error: insertError } = await supabase
+        .from('apps')
+        .insert([{
+          title,
+          category: finalCategory,
+          url,
+          thumbnailUrl: finalThumbnailUrl,
+        }]);
+
+      if (insertError) {
+        throw new Error('앱 등록에 실패했습니다: ' + insertError.message);
+      }
 
       // Reset and close
       setTitle('');
       setCategory('');
       setNewCategory('');
       setUrl('');
+      setThumbnailFile(null);
       onClose();
-      
-      // Optionally trigger a re-fetch in the parent component, 
-      // but Firestore real-time listener is better.
-      window.location.reload(); 
     } catch (err: any) {
       console.error(err);
       setError(err.message || '저장 중 오류가 발생했습니다.');
@@ -139,7 +164,18 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
             />
           </div>
 
-          {/* 썸네일은 이제 자동 생성되므로 UI 제거 */}
+          {/* Thumbnail Upload */}
+          <div className={formStyles.thumbnailSection}>
+            <label className={formStyles.fileLabel}>썸네일 이미지 (선택, 최대 50MB)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className={formStyles.fileInput}
+              onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+              disabled={isUploading}
+            />
+            <p className={formStyles.helperText}>선택하지 않으면 URL의 파비콘을 자동으로 가져옵니다.</p>
+          </div>
           
           {error && <div className={styles.errorMessage}>{error}</div>}
 

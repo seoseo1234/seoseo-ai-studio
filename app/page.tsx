@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { CategoryBar } from '@/components/layout/CategoryBar';
 import { Footer } from '@/components/layout/Footer';
@@ -23,21 +22,37 @@ export default function Home() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
   useEffect(() => {
-    // Real-time listener for apps
-    const q = query(collection(db, 'apps'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedApps = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as WebApp[];
-      setApps(fetchedApps);
+    const fetchApps = async () => {
+      const { data, error } = await supabase
+        .from('apps')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching apps: ", error);
+      } else {
+        setApps(data as WebApp[]);
+      }
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching apps: ", error);
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchApps();
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'apps' },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          fetchApps(); // Refetch on any change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const categories = useMemo(() => {
