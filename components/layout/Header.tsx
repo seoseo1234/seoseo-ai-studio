@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import Image from 'next/image';
 import { Search, Moon, Sun } from 'lucide-react';
 import { usePortalStore } from '../../store/usePortalStore';
 import styles from './Header.module.css';
@@ -14,8 +15,8 @@ export const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <div className={styles.logoContainer}>
-        <div className={styles.logoIcon}></div>
-        <h1 className={styles.title}>학습 포털</h1>
+        <Image src="/logo.png" alt="앱스퀘어 로고" width={48} height={48} className={styles.logoImage} />
+        <h1 className={styles.title}>앱스퀘어</h1>
       </div>
 
       <div className={styles.searchContainer}>

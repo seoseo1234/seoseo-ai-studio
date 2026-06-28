@@ -16,7 +16,6 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
   const [category, setCategory] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [url, setUrl] = useState('');
-  const [thumbnailUrl, setThumbnailUrl] = useState('');
   
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
@@ -39,12 +38,21 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
         throw new Error('로그인 세션이 만료되었습니다. 다시 로그인 해주세요.');
       }
 
+      // Generate Favicon URL automatically
+      let finalThumbnailUrl = '';
+      try {
+        const domain = new URL(url).hostname;
+        finalThumbnailUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+      } catch (e) {
+        // URL 파싱 에러 방지 (기본 썸네일 처리용)
+      }
+
       // Save to Firestore
       await addDoc(collection(db, 'apps'), {
         title,
         category: finalCategory,
         url,
-        thumbnailUrl: thumbnailUrl,
+        thumbnailUrl: finalThumbnailUrl,
         createdAt: new Date()
       });
 
@@ -53,7 +61,6 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
       setCategory('');
       setNewCategory('');
       setUrl('');
-      setThumbnailUrl('');
       onClose();
       
       // Optionally trigger a re-fetch in the parent component, 

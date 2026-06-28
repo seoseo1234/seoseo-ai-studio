@@ -1,4 +1,9 @@
 import React from 'react';
+import Image from 'next/image';
+import { ExternalLink, Trash2 } from 'lucide-react';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { usePortalStore } from '../../store/usePortalStore';
 import styles from './AppCard.module.css';
 
 export interface WebApp {
@@ -14,14 +19,35 @@ interface AppCardProps {
 }
 
 export const AppCard: React.FC<AppCardProps> = ({ app }) => {
+  const { isAdmin } = usePortalStore();
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent opening the link
+    e.stopPropagation();
+    
+    if (window.confirm(`'${app.title}' 앱을 정말 삭제하시겠습니까?`)) {
+      try {
+        await deleteDoc(doc(db, 'apps', app.id));
+      } catch (err) {
+        console.error("Error deleting app: ", err);
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
   return (
-    <a 
-      href={app.url} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className={styles.card}
-    >
-      <div className={styles.imageContainer}>
+    <a href={app.url} target="_blank" rel="noopener noreferrer" className={styles.cardLink}>
+      <div className={styles.card}>
+        {isAdmin && (
+          <button 
+            className={styles.deleteButton} 
+            onClick={handleDelete}
+            aria-label="Delete app"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+        <div className={styles.thumbnailContainer}>
         {app.thumbnailUrl ? (
           <img src={app.thumbnailUrl} alt={app.title} className={styles.image} />
         ) : (
