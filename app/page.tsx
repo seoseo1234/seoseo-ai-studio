@@ -5,6 +5,7 @@ import { collection, getDocs, onSnapshot, query, orderBy } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { Header } from '@/components/layout/Header';
 import { CategoryBar } from '@/components/layout/CategoryBar';
+import { Footer } from '@/components/layout/Footer';
 import { AppCard, WebApp } from '@/components/ui/AppCard';
 import { FloatingAdminButton } from '@/components/admin/FloatingAdminButton';
 import { AdminLoginModal } from '@/components/admin/AdminLoginModal';
@@ -98,6 +99,7 @@ export default function Home() {
           categories={categories}
         />
       )}
+      <Footer />
     </div>
   );
 }
