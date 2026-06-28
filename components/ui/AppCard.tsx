@@ -60,6 +60,7 @@ export const AppCard: React.FC<AppCardProps> = ({ app }) => {
         <div className={styles.category}>{app.category}</div>
         <h3 className={styles.title}>{app.title}</h3>
       </div>
+      </div>
     </a>
   );
 };
