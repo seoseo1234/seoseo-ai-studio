@@ -10,6 +10,8 @@ interface FloatingAdminButtonProps {
 export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({ onClick }) => {
   const { isAdmin } = usePortalStore();
 
+  if (isAdmin) return null;
+
   // If already admin, clicking might open the App Form Modal directly.
   // This button primarily serves as the entry point.
   return (
