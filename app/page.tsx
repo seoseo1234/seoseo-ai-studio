@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FolderCog, History, Plus } from 'lucide-react';
+import { Check, FolderCog, History, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { AppCategory, LinkStatus, WebApp } from '@/lib/portal-types';
 import { Header } from '@/components/layout/Header';
@@ -18,7 +18,7 @@ import { usePortalStore } from '@/store/usePortalStore';
 import styles from './page.module.css';
 
 export default function Home() {
-  const { searchQuery, selectedCategory, setSelectedCategory, isAdmin } = usePortalStore();
+  const { searchQuery, selectedCategory, setSelectedCategory, isAdmin, setIsAdmin } = usePortalStore();
   const [apps, setApps] = useState<WebApp[]>([]);
   const [categories, setCategories] = useState<AppCategory[]>([]);
   const [linkStatuses, setLinkStatuses] = useState<Record<string, LinkStatus>>({});
@@ -121,6 +121,19 @@ export default function Home() {
     await fetchData();
   };
 
+  const finishAdminMode = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert('관리자 모드를 종료하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    setIsFormModalOpen(false);
+    setIsCategoryModalOpen(false);
+    setIsHistoryModalOpen(false);
+    setEditingApp(null);
+    setIsAdmin(false);
+  };
+
   return <div className={styles.pageContainer}>
     <Header />
     <CategoryBar categories={categories.map((category) => category.name)} />
@@ -131,6 +144,7 @@ export default function Home() {
           <Button onClick={openCreateForm} icon={<Plus size={16} />}>앱 등록</Button>
           <Button variant="outlined" onClick={() => setIsCategoryModalOpen(true)} icon={<FolderCog size={16} />}>카테고리</Button>
           <Button variant="outlined" onClick={() => setIsHistoryModalOpen(true)} icon={<History size={16} />}>변경 이력</Button>
+          <Button variant="black" onClick={finishAdminMode} icon={<Check size={16} />}>관리 완료</Button>
         </div>
       </div>}
 

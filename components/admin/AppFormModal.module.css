@@ -67,7 +67,6 @@
 }
 
 .resetButton {
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -76,6 +75,38 @@
   color: var(--color-brand-starbucks);
   font-weight: 600;
   cursor: pointer;
+}
+
+.thumbnailActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.aiButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.2rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #5b5bd6, #8b5cf6);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aiButton:disabled,
+.resetButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.generationMessage {
+  margin: 0;
+  color: var(--color-brand-accent);
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .linkStatus {

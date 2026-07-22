@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { WebApp } from '../../lib/portal-types';
 import { Button } from '../ui/Button';
@@ -38,6 +38,8 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
   const [fileInputKey, setFileInputKey] = useState(0);
   const [linkState, setLinkState] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
   const [linkMessage, setLinkMessage] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [thumbnailMessage, setThumbnailMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const objectUrlRef = useRef<string | null>(null);
@@ -54,6 +56,7 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
     setThumbnailFile(file);
     setPreviewUrl(objectUrlRef.current ?? editingApp?.thumbnailUrl ?? '');
     setUseDefaultFavicon(false);
+    setThumbnailMessage(file ? '선택한 이미지가 미리보기에 반영되었습니다.' : '');
   };
 
   const resetToFavicon = () => {
@@ -67,7 +70,49 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
     setPreviewUrl(faviconUrl(url));
     setUseDefaultFavicon(true);
     setFileInputKey((value) => value + 1);
+    setThumbnailMessage('기본 파비콘이 미리보기에 반영되었습니다.');
     setError('');
+  };
+
+  const generateAiThumbnail = async () => {
+    const finalCategory = editingApp?.category ?? (category === 'new' ? newCategory.trim() : category);
+    if (!title.trim() || !validWebUrl(url)) {
+      setError('AI 썸네일을 만들려면 앱 이름과 올바른 링크를 먼저 입력해주세요.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError('');
+    setThumbnailMessage('Gemini가 링크를 분석하고 썸네일을 생성하고 있습니다...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('로그인 세션이 만료되었습니다. 다시 로그인 해주세요.');
+
+      const response = await fetch('/api/generate-thumbnail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ url, title: title.trim(), category: finalCategory }),
+      });
+      const result = await response.json() as { data?: string; mimeType?: string; error?: string };
+      if (!response.ok || !result.data) throw new Error(result.error ?? 'AI 썸네일을 생성하지 못했습니다.');
+
+      const binary = atob(result.data);
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      const mimeType = result.mimeType ?? 'image/jpeg';
+      const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+      const generatedFile = new File([bytes], `ai-thumbnail-${Date.now()}.${extension}`, { type: mimeType });
+      handleFileChange(generatedFile);
+      setFileInputKey((value) => value + 1);
+      setThumbnailMessage('AI 썸네일이 생성되었습니다. 앱을 저장하면 최종 반영됩니다.');
+    } catch (caught) {
+      setThumbnailMessage('');
+      setError(caught instanceof Error ? caught.message : 'AI 썸네일 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const checkLink = async () => {
@@ -201,15 +246,22 @@ export const AppFormModal: React.FC<AppFormModalProps> = ({ isOpen, onClose, cat
               {previewUrl ? <img src={previewUrl} alt="썸네일 미리보기" className={formStyles.previewImage} /> : <span>이미지를 선택하면 여기에 표시됩니다.</span>}
             </div>
             <input key={fileInputKey} type="file" accept="image/*" className={formStyles.fileInput} onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)} disabled={isUploading} />
-            <button type="button" className={formStyles.resetButton} onClick={resetToFavicon} disabled={isUploading}>
-              <RotateCcw size={15} /> 기본 파비콘으로 되돌리기
-            </button>
+            <div className={formStyles.thumbnailActions}>
+              <button type="button" className={formStyles.aiButton} onClick={generateAiThumbnail} disabled={isUploading || isGenerating}>
+                <Sparkles size={15} /> {isGenerating ? 'AI 생성 중...' : 'AI 썸네일 생성'}
+              </button>
+              <button type="button" className={formStyles.resetButton} onClick={resetToFavicon} disabled={isUploading || isGenerating}>
+                <RotateCcw size={15} /> 기본 파비콘
+              </button>
+            </div>
+            <p className={formStyles.helperText}>Gemini 3.6 Flash가 링크를 분석하고 이미지 생성 모델이 16:9 썸네일을 만듭니다.</p>
+            {thumbnailMessage && <p className={formStyles.generationMessage}>{thumbnailMessage}</p>}
           </div>
 
           {error && <div className={styles.errorMessage}>{error}</div>}
           <div className={styles.modalActions}>
             <Button type="button" variant="outlined" onClick={onClose} disabled={isUploading}>취소</Button>
-            <Button type="submit" variant="primary" disabled={isUploading}>{isUploading ? '저장 중...' : (editingApp ? '수정하기' : '등록하기')}</Button>
+            <Button type="submit" variant="primary" disabled={isUploading || isGenerating}>{isUploading ? '저장 중...' : (editingApp ? '수정하기' : '등록하기')}</Button>
           </div>
         </form>
       </div>
